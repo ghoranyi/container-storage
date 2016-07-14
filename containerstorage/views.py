@@ -1,15 +1,15 @@
-import django.http.HttpResponseServerError
+from django.http import HttpResponse, HttpResponseServerError
 from django.shortcuts import render
-from logging import getlogger
+from logging import getLogger
 
-import models.Node
+from models import Node
 
 import simplejson
 
 # Create your views here.
 
 
-log = getlogger("containerstorage")
+log = getLogger("containerstorage")
 
 
 def post_snapshot(request, engine_id):
@@ -24,7 +24,8 @@ def post_snapshot(request, engine_id):
         body = simplejson.loads(request.body)
         container_names = [c["Image"] for c in body["containers"]]
         log.info("{engine}: {containers}".format(engine=engine_id, containers=container_names))
+        return HttpResponse("OK")
 
-    except simplejson.JSONDevodeError as e:
+    except simplejson.JSONDecodeError as e:
         log.error("Unable to parse message: {msg}".format(msg=request.body))
         return HttpResponseServerError("Unable to parse message body")
