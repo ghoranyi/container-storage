@@ -27,5 +27,5 @@ def post_snapshot(request, engine_id):
         return HttpResponse("OK")
 
     except simplejson.JSONDecodeError as e:
-        log.error("Unable to parse message: {msg}".format(msg=request.body))
+        log.exception("Unable to parse message: {msg}".format(msg=request.body))
         return HttpResponseServerError("Unable to parse message body")
