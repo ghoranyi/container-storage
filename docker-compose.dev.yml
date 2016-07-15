@@ -7,15 +7,15 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - data_collection_network
-    depends_on:
-      -
   backend:
-    image: dockercloud/haproxy
-    links:
-      - whoami
-    environment:
-      - ADDITIONAL_SERVICES=project_dir:whoami
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+    image: pipetop/container-storage
     ports:
-      - "80:8000"
+      - 8878:8878
+    volumes:
+      - ./:/app/
+    networks:
+      - data_collection_network
+
+networks:
+  data_collection_network:
+    driver: bridge
