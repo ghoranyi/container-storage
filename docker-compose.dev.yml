@@ -8,17 +8,14 @@ services:
     networks:
       - data_collection_network
     depends_on:
-      - backend
+      -
   backend:
-    image: pipetop/container-storage
-    ports:
-      - 8878:8878
+    image: dockercloud/haproxy
+    links:
+      - whoami
+    environment:
+      - ADDITIONAL_SERVICES=project_dir:whoami
     volumes:
-      - ./:/app/
-    networks:
-      - data_collection_network
-
-networks:
-  data_collection_network:
-    # Use a custom driver
-    driver: bridge
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "80:8000"

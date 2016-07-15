@@ -3,14 +3,21 @@ from datetime import datetime
 
 from django.db import models
 
+from uuidfield import UUIDField
+
 # Create your models here.
 
 
 class Node(models.Model):
-    engine_id = models.CharField(max_length=200)
+    node_uuid = UUIDField(auto=True)
     host_name = models.CharField(max_length=1000, blank=True)
     docker_version = models.CharField(max_length=15, blank=True)
     last_updated = models.DateTimeField(default=datetime.now)
+
+    @classmethod
+    def create(cls):
+        obj = cls()
+        return obj
 
 
 class Container(models.Model):
