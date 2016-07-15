@@ -10,4 +10,6 @@ ADD . /app
 
 RUN /virtualenv/bin/python /app/manage.py migrate
 
-CMD /virtualenv/bin/python /app/manage.py runserver 0.0.0.0:8000
+EXPOSE 8878
+
+CMD /virtualenv/bin/python /app/manage.py runserver 0.0.0.0:8878

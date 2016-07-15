@@ -11,6 +11,8 @@ services:
       - backend
   backend:
     image: pipetop/container-storage
+    ports:
+      - 8878:8878
     volumes:
       - ./:/app/
     networks:
@@ -18,4 +20,5 @@ services:
 
 networks:
   data_collection_network:
-    driver: overlay
+    # Use a custom driver
+    driver: bridge
