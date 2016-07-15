@@ -8,6 +8,7 @@ RUN /virtualenv/bin/pip install -r /app/requirements.txt
 
 ADD . /app
 
+RUN /virtualenv/bin/python /app/manage.py makemigrations
 RUN /virtualenv/bin/python /app/manage.py migrate
 
 EXPOSE 8878

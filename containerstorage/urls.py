@@ -4,5 +4,5 @@ from . import views
 
 urlpatterns = [
     url(r'api/register/?$', views.register_node, name='register_node'),
-    url(r'api/snapshot/(?P<engine_id>.+)/?$', views.post_snapshot, name='snapshot'),
+    url(r'api/snapshot/(?P<node_id>[0-9]+)/?$', views.post_snapshot, name='snapshot'),
 ]

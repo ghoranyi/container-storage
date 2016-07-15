@@ -3,7 +3,7 @@ import logging
 import os
 import sys
 
-logging.basicConfig()
+logging.basicConfig(level=logging.INFO)
 
 if __name__ == "__main__":
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "containerstorageservice.settings")

@@ -14,8 +14,8 @@ log = getLogger("containerstorage")
 
 def register_node(request):
     node = Node.create()
-    log.info("New node registered ({engine})".format(engine=node.node_uuid))
-    return HttpResponse(node.node_uuid)
+    log.warn("New node registered ({engine})".format(engine=node.node_id))
+    return HttpResponse(node.node_id)
 
 
 def post_snapshot(request, node_id):
@@ -23,8 +23,9 @@ def post_snapshot(request, node_id):
     log.debug("Request from {engine}".format(engine=node_id))
 
     try:
-        node_object = Node.objects.get(node_uuid=node_id)
+        node_object = Node.objects.get(node_id=node_id)
     except Node.DoesNotExist:
+        log.info("Node is not registered. ({node_id})".format(node_id=node_id))
         return HttpResponseNotFound("Node is not registered. (node_id = {node_id})".format(node_id=node_id))
 
     try:
