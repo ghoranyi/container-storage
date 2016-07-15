@@ -2,7 +2,7 @@ from django.http import HttpResponse, HttpResponseServerError, HttpResponseNotFo
 from django.shortcuts import render
 from logging import getLogger
 
-from models import Node
+from containerstorage.models import Node
 
 import simplejson
 
@@ -14,7 +14,8 @@ log = getLogger("containerstorage")
 
 def register_node(request):
     node = Node.create()
-    log.warn("New node registered ({engine})".format(engine=node.node_id))
+    node.save()
+    log.info("New node registered ({engine})".format(engine=node.node_id))
     return HttpResponse(node.node_id)
 
 
