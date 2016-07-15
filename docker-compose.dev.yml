@@ -1,0 +1,21 @@
+version: '2'
+
+services:
+  agent:
+    image: pipetop/docker-agent
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - data_collection_network
+    depends_on:
+      - backend
+  backend:
+    image: pipetop/container-storage
+    volumes:
+      - ./:/app/
+    networks:
+      - data_collection_network
+
+networks:
+  data_collection_network:
+    driver: overlay
