@@ -1,3 +1,4 @@
+from datetime import datetime
 from django.http import HttpResponse, HttpResponseServerError, Http404
 from django.shortcuts import render
 from logging import getLogger
@@ -26,7 +27,7 @@ def post_snapshot(request, node_id):
 
     try:
         body = simplejson.loads(request.body)
-        _remove_killed_containers(body)
+        _remove_killed_containers(body, node_object)
         for c in body["containers"]:
             container, created = Container.objects.get_or_create(container_id=c["Id"], host_node=node_object)
             container.image_name = c["Image"]
@@ -34,7 +35,7 @@ def post_snapshot(request, node_id):
             container.save()
             if created:
                 log.info("New container detected: {node}/{container}".format(node=node_object.node_uuid, container=container.image_name))
-            _remove_disconnected_networks(c)
+            _remove_disconnected_networks(c, container)
             for network_name, network_details in c["NetworkSettings"]["Networks"].iteritems():
                 network, created = NetworkInterface.objects.get_or_create(endpoint_id=network_details["EndpointID"], container=container)
                 network.network_name = network_name
@@ -59,20 +60,22 @@ def post_snapshot(request, node_id):
 def _get_node(node_id):
     try:
         node_object = Node.objects.get(node_uuid=node_id)
+        node_object.last_updated = datetime.now()
+        node_object.save()
         return node_object
     except Node.DoesNotExist:
         log.info("Node is not registered. ({node_id})".format(node_id=node_id))
         raise Http404("Node is not registered. (node_id = {node_id})".format(node_id=node_id))
 
 
-def _remove_killed_containers(body):
+def _remove_killed_containers(body, node_object):
     container_ids = [c["Id"] for c in body["containers"]]
     killed_containers = Container.objects.filter(host_node=node_object).exclude(container_id__in=container_ids).delete()
     if killed_containers > 0:
         log.info("{no} containers were killed on {node}".format(no=killed_containers, node=node_object.node_uuid))
 
 
-def _remove_disconnected_networks(c):
+def _remove_disconnected_networks(c, container):
     network_ids = [n_details["EndpointID"] for n_name, n_details in c["NetworkSettings"]["Networks"].iteritems()]
     detached_no, detached_list = NetworkInterface.objects.filter(container=container).exclude(endpoint_id__in=network_ids).delete()
     if detached_no > 0:
