@@ -12,8 +12,8 @@ class Node(models.Model):
     docker_version = models.CharField(max_length=15, blank=True)
     last_updated = models.DateTimeField(default=datetime.now)
 
-    def __str__(self):
-        return self.node_uuid
+    def __unicode__(self):
+        return unicode(self.node_uuid)
 
 
 class Container(models.Model):
@@ -22,8 +22,8 @@ class Container(models.Model):
     image_id = models.CharField(max_length=300)
     container_id = models.CharField(max_length=300)
 
-    def __str__(self):
-        return self.image_name
+    def __unicode__(self):
+        return unicode(self.image_name)
 
 
 class NetworkInterface(models.Model):
@@ -36,5 +36,5 @@ class NetworkInterface(models.Model):
     gateway_address = models.CharField(max_length=40, blank=True)
     subnet_prefix_length = models.IntegerField(default=0)
 
-    def __str__(self):
-        return self.network_name
+    def __unicode__(self):
+        return unicode(self.network_name)
