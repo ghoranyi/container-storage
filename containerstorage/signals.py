@@ -1,7 +1,11 @@
+from logging import getLogger
+
 from django.db.models.signals import post_delete, pre_save
 from django.dispatch import receiver
 
 from containerstorage.models import Container, Service
+
+log = getLogger("containerstorage.signals")
 
 
 @receiver(post_delete, sender=Container)
