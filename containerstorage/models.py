@@ -16,8 +16,16 @@ class Node(models.Model):
         return unicode(self.node_uuid)
 
 
+class Service(models.Model):
+    name = models.CharField(max_length=300)
+
+    def __unicode__(self):
+        return unicode(self.name)
+
+
 class Container(models.Model):
     host_node = models.ForeignKey(Node, on_delete=models.CASCADE)
+    service = models.ForeignKey(Service, on_delete=models.DO_NOTHING, blank=True, null=True, default=None)
     image_name = models.CharField(max_length=1000)
     image_id = models.CharField(max_length=300)
     container_id = models.CharField(max_length=300)
