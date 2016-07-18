@@ -1,4 +1,4 @@
-from django.http import HttpResponse, HttpResponseServerError, HttpResponseNotFound
+from django.http import HttpResponse, HttpResponseServerError, Http404
 from django.shortcuts import render
 from logging import getLogger
 
@@ -22,22 +22,11 @@ def post_snapshot(request, node_id):
 
     log.debug("Request from {engine}".format(engine=node_id))
 
-    try:
-        node_object = Node.objects.get(node_uuid=node_id)
-    except Node.DoesNotExist:
-        log.info("Node is not registered. ({node_id})".format(node_id=node_id))
-        return HttpResponseNotFound("Node is not registered. (node_id = {node_id})".format(node_id=node_id))
+    node_object = _get_node(node_id)
 
     try:
         body = simplejson.loads(request.body)
-        container_ids = [c["Id"] for c in body["containers"]]
-        killed_containers = Container.objects.filter(host_node=node_object).exclude(container_id__in=container_ids).delete()
-        if killed_containers > 0:
-            log.info("{no} containers were killed on {node}".format(no=killed_containers, node=node_object.node_uuid))
-        container_ids = [c["Id"] for c in body["containers"]]
-        killed_containers_no, killed_containers = Container.objects.filter(host_node=node_object).exclude(container_id__in=container_ids).delete()
-        if killed_containers_no > 0:
-            log.info("{no} containers were killed on {node}".format(no=killed_containers_no, node=node_object.node_uuid))
+        _remove_killed_containers(body)
         for c in body["containers"]:
             container, created = Container.objects.get_or_create(container_id=c["Id"], host_node=node_object)
             container.image_name = c["Image"]
@@ -45,10 +34,7 @@ def post_snapshot(request, node_id):
             container.save()
             if created:
                 log.info("New container detected: {node}/{container}".format(node=node_object.node_uuid, container=container.image_name))
-            network_ids = [n_details["EndpointID"] for n_name, n_details in c["NetworkSettings"]["Networks"].iteritems()]
-            detached_no, detached_list = NetworkInterface.objects.filter(container=container).exclude(endpoint_id__in=network_ids).delete()
-            if detached_no > 0:
-                log.info("{no} interfaces were detached from {container}".format(no=detached_no, container=str(container)))
+            _remove_disconnected_networks(c)
             for network_name, network_details in c["NetworkSettings"]["Networks"].iteritems():
                 network, created = NetworkInterface.objects.get_or_create(endpoint_id=network_details["EndpointID"], container=container)
                 network.network_name = network_name
@@ -68,6 +54,28 @@ def post_snapshot(request, node_id):
     except simplejson.JSONDecodeError as e:
         log.exception("Unable to parse message: {msg}".format(msg=request.body))
         return HttpResponseServerError("Unable to parse message body")
+
+
+def _get_node(node_id):
+    try:
+        node_object = Node.objects.get(node_uuid=node_id)
+    except Node.DoesNotExist:
+        log.info("Node is not registered. ({node_id})".format(node_id=node_id))
+        raise Http404("Node is not registered. (node_id = {node_id})".format(node_id=node_id))
+
+
+def _remove_killed_containers(body):
+    container_ids = [c["Id"] for c in body["containers"]]
+    killed_containers = Container.objects.filter(host_node=node_object).exclude(container_id__in=container_ids).delete()
+    if killed_containers > 0:
+        log.info("{no} containers were killed on {node}".format(no=killed_containers, node=node_object.node_uuid))
+
+
+def _remove_disconnected_networks(c):
+    network_ids = [n_details["EndpointID"] for n_name, n_details in c["NetworkSettings"]["Networks"].iteritems()]
+    detached_no, detached_list = NetworkInterface.objects.filter(container=container).exclude(endpoint_id__in=network_ids).delete()
+    if detached_no > 0:
+        log.info("{no} interfaces were disconnected from {container}".format(no=detached_no, container=str(container)))
 
 
 def overview(request):
