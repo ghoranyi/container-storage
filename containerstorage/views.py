@@ -70,9 +70,9 @@ def _get_node(node_id):
 
 def _remove_killed_containers(body, node_object):
     container_ids = [c["Id"] for c in body["containers"]]
-    killed_containers = Container.objects.filter(host_node=node_object).exclude(container_id__in=container_ids).delete()
-    if killed_containers > 0:
-        log.info("{no} containers were killed on {node}".format(no=killed_containers, node=node_object.node_uuid))
+    killed_containers_no, killed_containers = Container.objects.filter(host_node=node_object).exclude(container_id__in=container_ids).delete()
+    if killed_containers_no > 0:
+        log.info("{no} containers were killed on {node}".format(no=killed_containers_no, node=node_object.node_uuid))
 
 
 def _remove_disconnected_networks(c, container):
