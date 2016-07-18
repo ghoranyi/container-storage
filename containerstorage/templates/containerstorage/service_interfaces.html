@@ -1,0 +1,14 @@
+
+<h1>Network interfaces of services</h1>
+
+<ul>
+{% for service in services %}
+  <li class="service">{{ service.name }}
+    <ul>
+    {% for net in service.networks %}
+      <li class="interface">{{ net.0 }}/{{ net.1 }}</li>
+    {% endfor %}
+    </ul>
+  </li>
+{% endfor %}
+</ul>

@@ -3,7 +3,8 @@ from django.http import HttpResponse, HttpResponseServerError, Http404
 from django.shortcuts import render
 from logging import getLogger
 
-from containerstorage.models import Node, Container, NetworkInterface
+from containerstorage.models import Node, Container, NetworkInterface, Service
+from containerstorage.utils import get_service_ips_and_subnets
 
 import simplejson
 
@@ -44,7 +45,7 @@ def post_snapshot(request, node_id):
                 network.mac_address = network_details["MacAddress"]
                 network.ip_address = network_details["IPAddress"]
                 network.gateway_address = network_details["Gateway"]
-                network.subnet_prefix_len = network_details["IPPrefixLen"]
+                network.subnet_prefix_length = network_details["IPPrefixLen"]
                 network.save()
                 if created:
                     log.info("New network interface detected: {node}/{container}/{network}".format(
@@ -113,3 +114,14 @@ def overview(request):
             "containers": containers
         })
     return render(request, 'containerstorage/overview.html', {"snapshot": snapshot})
+
+
+def service_interfaces(request):
+    services = list()
+    for service in Service.objects.all():
+        interfaces = get_service_ips_and_subnets(service)
+        services.append({
+            "name": str(service),
+            "networks": interfaces
+        })
+    return render(request, 'containerstorage/service_interfaces.html', {"services": services})

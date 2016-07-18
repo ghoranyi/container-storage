@@ -9,4 +9,5 @@ urlpatterns = [
 
     # Misc
     url(r'overview/?$', views.overview, name='overview'),
+    url(r'service_interfaces/?$', views.service_interfaces, name='service_interfaces'),
 ]
