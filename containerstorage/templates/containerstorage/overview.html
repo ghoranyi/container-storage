@@ -6,7 +6,7 @@
   <li class="node">{{ node.name }}
     <ul>
     {% for container in node.containers %}
-      <li class="container">{{ container.name }}
+      <li class="container">{{ container.name }} <strong>({{ container.service }})</strong>
         <ul>
           {% for interface in container.interfaces %}
           <li class="interface">{{ interface.network_name }} | {{ interface.ip_address }}</li>

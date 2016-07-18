@@ -2,7 +2,7 @@ from logging import getLogger
 
 from containerstorage.models import Container, Service
 
-log = getLogger(containerstorage.services)
+log = getLogger("containerstorage.services")
 
 
 def container_updated(container_details, container):
@@ -10,7 +10,7 @@ def container_updated(container_details, container):
     if service_name:
         service, created = Service.objects.get_or_create(name=service_name)
         if created:
-            log.info("New service detected: {service}".format(sevice=str(service)))
+            log.info("New service detected: {service}".format(service=str(service)))
         if container.service is not None and container.service != service:
             container_will_be_removed(container)
         container.service = service
@@ -20,7 +20,6 @@ def container_updated(container_details, container):
 def container_will_be_removed(container):
     if Container.objects.filter(service=container.service).count() <= 1:
         log.info("Service removed: {service}".format(service=str(service)))
-    pass
 
 
 def _get_service_name(container_details):

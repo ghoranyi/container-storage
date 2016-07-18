@@ -4,6 +4,7 @@ from django.shortcuts import render
 from logging import getLogger
 
 from containerstorage.models import Node, Container, NetworkInterface
+from containerstorage.services import container_updated, container_will_be_removed
 
 import simplejson
 
@@ -33,6 +34,7 @@ def post_snapshot(request, node_id):
             container.image_name = c["Image"]
             container.image_id = c["ImageID"]
             container.save()
+            container_updated(c, container)
             if created:
                 log.info("New container detected: {node}/{container}".format(node=node_object.node_uuid, container=container.image_name))
             _remove_disconnected_networks(c, container)
@@ -73,6 +75,8 @@ def _remove_killed_containers(body, node_object):
     killed_containers_no, killed_containers = Container.objects.filter(host_node=node_object).exclude(container_id__in=container_ids).delete()
     if killed_containers_no > 0:
         log.info("{no} containers were killed on {node}".format(no=killed_containers_no, node=node_object.node_uuid))
+        for container in killed_containers:
+            container_will_be_removed(container)
 
 
 def _remove_disconnected_networks(c, container):
@@ -95,6 +99,7 @@ def overview(request):
                 list(NetworkInterface.objects.filter(container=container)))
             containers.append({
                 "name": str(container),
+                "service": str(container.service),
                 "interfaces": interfaces
             })
         snapshot.append({
