@@ -20,7 +20,7 @@ services:
       - backend-redis-storage
     environment:
       - C_FORCE_ROOT=1
-    command: /virtualenv/bin/celery -A containerstorageservice worker --loglevel=info
+    command: /app/start_celery_workers.sh
 
   redis:
       image: redis

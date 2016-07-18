@@ -3,3 +3,9 @@ virtualenv
 
 db.sqlite3
 containerstorage/migrations
+
+celerybeat-schedule.pag
+
+celerybeat-schedule.dir
+
+*.pid
