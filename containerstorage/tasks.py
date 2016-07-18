@@ -13,4 +13,4 @@ def clean_old_nodes():
     log.info("Scheduled task: removing old nodes")
     old_nodes_no, old_nodes = Node.objects.filter(last_updated__lte=datetime.now() - timedelta(minutes=10)).delete()
     if old_nodes_no:
-        log.info("Removed old nodes: {nodes}".format(nodes=old_nodes))
+        log.info("Removed old nodes: {nodes}".format(nodes=str(old_nodes)))

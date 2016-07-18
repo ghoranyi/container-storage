@@ -4,7 +4,6 @@ from django.shortcuts import render
 from logging import getLogger
 
 from containerstorage.models import Node, Container, NetworkInterface
-from containerstorage.services import container_updated, container_will_be_removed
 
 import simplejson
 
@@ -33,8 +32,8 @@ def post_snapshot(request, node_id):
             container, created = Container.objects.get_or_create(container_id=c["Id"], host_node=node_object)
             container.image_name = c["Image"]
             container.image_id = c["ImageID"]
+            container.service_name = _get_service_name(c)
             container.save()
-            container_updated(c, container)
             if created:
                 log.info("New container detected: {node}/{container}".format(node=node_object.node_uuid, container=container.image_name))
             _remove_disconnected_networks(c, container)
@@ -75,8 +74,6 @@ def _remove_killed_containers(body, node_object):
     killed_containers_no, killed_containers = Container.objects.filter(host_node=node_object).exclude(container_id__in=container_ids).delete()
     if killed_containers_no > 0:
         log.info("{no} containers were killed on {node}".format(no=killed_containers_no, node=node_object.node_uuid))
-        for container in killed_containers:
-            container_will_be_removed(container)
 
 
 def _remove_disconnected_networks(c, container):
@@ -84,6 +81,15 @@ def _remove_disconnected_networks(c, container):
     detached_no, detached_list = NetworkInterface.objects.filter(container=container).exclude(endpoint_id__in=network_ids).delete()
     if detached_no > 0:
         log.info("{no} interfaces were disconnected from {container}".format(no=detached_no, container=str(container)))
+
+
+def _get_service_name(container_details):
+    # docker-compose service
+    labels = container_details["Labels"]
+    COMPOSE_SERVICE_LABEL_KEY = "com.docker.compose.service"
+    if COMPOSE_SERVICE_LABEL_KEY in labels:
+        return labels[COMPOSE_SERVICE_LABEL_KEY]
+    return None
 
 
 def overview(request):

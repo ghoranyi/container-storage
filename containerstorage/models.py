@@ -26,6 +26,7 @@ class Service(models.Model):
 class Container(models.Model):
     host_node = models.ForeignKey(Node, on_delete=models.CASCADE)
     service = models.ForeignKey(Service, on_delete=models.DO_NOTHING, blank=True, null=True, default=None)
+    service_name = models.CharField(max_length=300, blank=True, null=True)
     image_name = models.CharField(max_length=1000)
     image_id = models.CharField(max_length=300)
     container_id = models.CharField(max_length=300)
