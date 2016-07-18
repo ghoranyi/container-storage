@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.9/ref/settings/
 """
 
+from datetime import timedelta
 import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -31,7 +32,6 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    'containerstorage.apps.ContainerstorageConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'djcelery',
     'kombu.transport.django',
+    'containerstorage',
 ]
 
 MIDDLEWARE_CLASSES = [
@@ -126,5 +127,9 @@ CSRF_COOKIE_SECURE = False
 
 # CELERY settings
 
+CELERY_IMPORTS = ('containerstorage.tasks',)
+
+
 BROKER_URL = 'redis://redis:6379/0'
+CELERY_SCHEDULER = "djcelery.schedulers.DatabaseScheduler"
 CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
