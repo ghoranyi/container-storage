@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'djcelery',
 ]
 
 MIDDLEWARE_CLASSES = [
@@ -121,3 +122,9 @@ USE_TZ = False
 STATIC_URL = '/static/'
 
 CSRF_COOKIE_SECURE = False
+
+# CELERY settings
+
+CELERY_BROKER_URL = 'redis://redis:6379/0'
+BROKER_URL = 'redis://redis:6379/0'
+CELERY_RESULT_BACKEND = 'redis://redis:6379/0'

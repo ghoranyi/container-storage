@@ -12,5 +12,6 @@ RUN /virtualenv/bin/python /app/manage.py makemigrations
 RUN /virtualenv/bin/python /app/manage.py migrate
 
 EXPOSE 8878
+WORKDIR /app
 
 CMD /virtualenv/bin/python /app/manage.py runserver 0.0.0.0:8878

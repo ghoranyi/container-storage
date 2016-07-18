@@ -10,6 +10,23 @@ services:
       - ./:/app/
     networks:
       - data_collection_network
+      - backend-redis-storage
+  worker:
+    build: .
+    image: pipetop/container-worker
+    volumes:
+      - ./:/app/
+    networks:
+      - backend-redis-storage
+    environment:
+      - C_FORCE_ROOT=1
+    command: /virtualenv/bin/celery -A containerstorageservice worker --loglevel=info
+
+  redis:
+      image: redis
+      networks:
+        - backend-redis-storage
+
   agent:
     image: pipetop/docker-agent
     volumes:
@@ -19,4 +36,6 @@ services:
 
 networks:
   data_collection_network:
+    driver: bridge
+  backend-redis-storage:
     driver: bridge
