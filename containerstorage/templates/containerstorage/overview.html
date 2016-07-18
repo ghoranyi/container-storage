@@ -1,0 +1,20 @@
+
+<h1>Overview</h1>
+
+<ul>
+{% for node in snapshot %}
+  <li class="node">{{ node.name }}
+    <ul>
+    {% for container in node.containers %}
+      <li class="container">{{ container.name }}
+        <ul>
+          {% for interface in container.interfaces %}
+          <li class="interface">{{ interface.network_name }} | {{ interface.ip_address }}</li>
+          {% endfor %}
+        </ul>
+      </li>
+    {% endfor %}
+    </ul>
+  </li>
+{% endfor %}
+</ul>

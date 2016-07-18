@@ -68,3 +68,25 @@ def post_snapshot(request, node_id):
     except simplejson.JSONDecodeError as e:
         log.exception("Unable to parse message: {msg}".format(msg=request.body))
         return HttpResponseServerError("Unable to parse message body")
+
+
+def overview(request):
+    snapshot = list()
+    for node in Node.objects.all():
+        containers = list()
+        for container in Container.objects.filter(host_node=node):
+            interfaces = map(
+                lambda x: {
+                    "ip_address": x.ip_address,
+                    "network_name": x.network_name
+                },
+                list(NetworkInterface.objects.filter(container=container)))
+            containers.append({
+                "name": str(container),
+                "interfaces": interfaces
+            })
+        snapshot.append({
+            "name": str(node),
+            "containers": containers
+        })
+    return render(request, 'containerstorage/overview.html', {"snapshot": snapshot})
