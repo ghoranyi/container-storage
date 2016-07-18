@@ -59,6 +59,7 @@ def post_snapshot(request, node_id):
 def _get_node(node_id):
     try:
         node_object = Node.objects.get(node_uuid=node_id)
+        return node_object
     except Node.DoesNotExist:
         log.info("Node is not registered. ({node_id})".format(node_id=node_id))
         raise Http404("Node is not registered. (node_id = {node_id})".format(node_id=node_id))
