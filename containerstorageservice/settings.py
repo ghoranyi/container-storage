@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'djcelery',
     'kombu.transport.django',
     'containerstorage',
+    'frontend_converter'
 ]
 
 MIDDLEWARE_CLASSES = [

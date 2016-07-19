@@ -6,3 +6,10 @@ def get_service_ips_and_subnets(service):
         lambda net: (net.ip_address, net.subnet_prefix_length),
         list(NetworkInterface.objects.filter(container__service=service))
     )
+
+
+def get_service_ips(service):
+    return map(
+        lambda net: net.ip_address,
+        list(NetworkInterface.objects.filter(container__service=service))
+    )

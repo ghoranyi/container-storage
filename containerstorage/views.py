@@ -8,8 +8,6 @@ from containerstorage.utils import get_service_ips_and_subnets
 
 import simplejson
 
-# Create your views here.
-
 
 log = getLogger("containerstorage")
 
