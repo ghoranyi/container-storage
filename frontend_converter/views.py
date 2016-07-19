@@ -1,10 +1,21 @@
 from containerstorage.models import Service
 from containerstorage.utils import get_service_ips
+from django.conf import settings
 from django.http.response import JsonResponse
+from elasticsearch import Elasticsearch
+
 
 
 def view_es_query(request):
     return JsonResponse(_generate_es_query())
+
+
+def view_es_reponse(request):
+    url = settings.ELASTIC_URL
+    query = _generate_es_query()
+    es = Elasticsearch(url)
+    res = es.search(body=query)
+    return JsonResponse(res)
 
 
 def _generate_es_query():
