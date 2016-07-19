@@ -31,22 +31,13 @@ def post_snapshot(request, node_id):
         _remove_killed_containers(body, node_object)
         for c in body["containers"]:
             container, created = Container.objects.get_or_create(container_id=c["Id"], host_node=node_object)
-            container.image_name = c["Image"]
-            container.image_id = c["ImageID"]
-            container.service_name = _get_service_name(c)
-            container.save()
+            _update_container(c, container)
             if created:
                 log.info("New container detected: {node}/{container}".format(node=node_object.node_uuid, container=container.image_name))
             _remove_disconnected_networks(c, container)
             for network_name, network_details in c["NetworkSettings"]["Networks"].iteritems():
                 network, created = NetworkInterface.objects.get_or_create(endpoint_id=network_details["EndpointID"], container=container)
-                network.network_name = network_name
-                network.network_id = network_details["NetworkID"]
-                network.mac_address = network_details["MacAddress"]
-                network.ip_address = network_details["IPAddress"]
-                network.gateway_address = network_details["Gateway"]
-                network.subnet_prefix_length = network_details["IPPrefixLen"]
-                network.save()
+                _update_network(network, network_details, network_name)
                 if created:
                     log.info("New network interface detected: {node}/{container}/{network}".format(
                         node=node_object.node_uuid,
@@ -57,6 +48,23 @@ def post_snapshot(request, node_id):
     except simplejson.JSONDecodeError as e:
         log.exception("Unable to parse message: {msg}".format(msg=request.body))
         return HttpResponseServerError("Unable to parse message body")
+
+
+def _update_network(network, network_details, network_name):
+    network.network_name = network_name
+    network.network_id = network_details["NetworkID"]
+    network.mac_address = network_details["MacAddress"]
+    network.ip_address = network_details["IPAddress"]
+    network.gateway_address = network_details["Gateway"]
+    network.subnet_prefix_length = network_details["IPPrefixLen"]
+    network.save()
+
+
+def _update_container(c, container):
+    container.image_name = c["Image"]
+    container.image_id = c["ImageID"]
+    container.service_name = _get_service_name(c)
+    container.save()
 
 
 def _get_node(node_id):

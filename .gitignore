@@ -9,3 +9,4 @@ celerybeat-schedule.pag
 celerybeat-schedule.dir
 
 *.pid
+.idea
