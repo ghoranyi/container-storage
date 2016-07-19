@@ -1,6 +1,6 @@
 FROM python:2.7.12-alpine
 
-RUN apk update && apk add py-virtualenv
+RUN apk update && apk add py-virtualenv mysql-client
 RUN virtualenv /virtualenv
 
 ADD requirements.txt /app/requirements.txt

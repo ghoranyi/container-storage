@@ -15,4 +15,7 @@ services:
     image: pipetop/container-worker
     environment:
       - C_FORCE_ROOT=1
+      - CELERY_BROKER_REDIS_URL=backend-worker-redis.h4s6xj.0001.euw1.cache.amazonaws.com
+      - CELERY_RESULTS_REDIS_URL=backend-worker-redis.h4s6xj.0001.euw1.cache.amazonaws.com
+      - ELASTICSEARCH_URL=https://search-proto-es-jcu7bqjlxa5ezcqphmii63yoky.eu-west-1.es.amazonaws.com
     command: /app/start_celery_workers.sh
