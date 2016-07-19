@@ -131,6 +131,10 @@ CSRF_COOKIE_SECURE = False
 CELERY_IMPORTS = ('containerstorage.tasks',)
 
 
-BROKER_URL = 'redis://redis:6379/0'
+BROKER_URL = 'redis://{redis}:6379/0'.format(redis=os.getenv('CELERY_BROKER_REDIS_URL', 'redis'))
 CELERY_SCHEDULER = "djcelery.schedulers.DatabaseScheduler"
-CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
+CELERY_RESULT_BACKEND = 'redis://{redis}:6379/0'.format(redis=os.getenv('CELERY_RESULTS_REDIS_URL', 'redis'))
+
+# Elasticsearch connection settings
+
+ELASTIC_URL = os.getenv("ELASTICSEARCH_URL", "https://search-proto-es-jcu7bqjlxa5ezcqphmii63yoky.eu-west-1.es.amazonaws.com")
