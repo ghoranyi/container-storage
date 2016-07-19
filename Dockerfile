@@ -1,6 +1,7 @@
-FROM python:2.7.12-alpine
+FROM python:2.7.12
 
-RUN apk update && apk add py-virtualenv mysql-client
+# RUN apk update && apk add py-virtualenv mariadb-dev
+RUN apt-get update && apt-get install -y --force-yes python-virtualenv libmysqlclient-dev
 RUN virtualenv /virtualenv
 
 ADD requirements.txt /app/requirements.txt
