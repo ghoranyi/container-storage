@@ -6,11 +6,9 @@ from django.http.response import JsonResponse
 def view_es_query(request):
     return JsonResponse(_generate_es_query())
 
-def _generate_es_query():
-    query_object = {}
 
-    query_object['size'] = '0'
-    query_object["query"] = {
+def _generate_es_query():
+    query_object = {"size": 0, "query": {
         "constant_score": {
             "filter": {
                 "term": {
@@ -18,13 +16,14 @@ def _generate_es_query():
                 }
             }
         }
-    }
+    }}
+
     filters = {}
     for service in Service.objects.all():
         service_filter = {}
         interfaces = get_service_ips(service)
         service_filter["terms"] = {
-            "ip": str(interfaces)
+            "ip": interfaces
         }
         filters[service.name] = service_filter
 
