@@ -2,7 +2,7 @@ FROM python:2.7.12
 
 # RUN apk update && apk add py-virtualenv mariadb-dev
 RUN apt-get update && apt-get install -y --force-yes python-virtualenv libmysqlclient-dev
-RUN virtualenv /virtualenv
+RUN virtualenv -p python2.7 --no-site-packages /virtualenv
 
 ADD requirements.txt /app/requirements.txt
 RUN /virtualenv/bin/pip install -r /app/requirements.txt
