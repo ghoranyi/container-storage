@@ -133,7 +133,7 @@ CELERY_IMPORTS = ('containerstorage.tasks',)
 
 BROKER_URL = 'redis://{redis}:6379/0'.format(redis=os.getenv('CELERY_BROKER_REDIS_URL', 'redis'))
 CELERY_SCHEDULER = "djcelery.schedulers.DatabaseScheduler"
-CELERY_RESULT_BACKEND = 'redis://{redis}:6379/0'.format(redis=os.getenv('CELERY_RESULTS_REDIS_URL', 'redis'))
+CELERY_RESULT_BACKEND = 'redis://{redis}:6379/1'.format(redis=os.getenv('CELERY_RESULTS_REDIS_URL', 'redis'))
 
 # Elasticsearch connection settings
 
