@@ -1,0 +1,18 @@
+version: '2'
+
+services:
+  backend:
+    build: .
+    image: pipetop/container-storage
+    ports:
+      - 8878:8878
+    environment:
+      - CELERY_BROKER_REDIS_URL=backend-worker-redis.h4s6xj.0001.euw1.cache.amazonaws.com
+      - CELERY_RESULTS_REDIS_URL=backend-worker-redis.h4s6xj.0001.euw1.cache.amazonaws.com
+      - ELASTICSEARCH_URL=https://search-proto-es-jcu7bqjlxa5ezcqphmii63yoky.eu-west-1.es.amazonaws.com
+  worker:
+    build: .
+    image: pipetop/container-worker
+    environment:
+      - C_FORCE_ROOT=1
+    command: /app/start_celery_workers.sh
