@@ -2,7 +2,6 @@
 virtualenv
 
 db.sqlite3
-containerstorage/migrations
 
 celerybeat-schedule.pag
 
