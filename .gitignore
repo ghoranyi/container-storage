@@ -9,3 +9,32 @@ celerybeat-schedule.dir
 
 *.pid
 .idea
+__pycache__
+.cache
+
+# Logs
+*.log
+pip-log.txt
+
+# Unit test / coverage reports
+.coverage
+.tox
+nosetests.xml
+
+# Translations
+*.mo
+*.pot
+
+# Pycharm
+.idea
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*~
+*.swp
+*.swo
+*.swn
+
+# OS
+.DS_Store

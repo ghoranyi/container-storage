@@ -30,20 +30,34 @@ class Container(models.Model):
     image_name = models.CharField(max_length=1000)
     image_id = models.CharField(max_length=300)
     container_id = models.CharField(max_length=300)
+    host_name = models.CharField(max_length=1000, null=True)
 
     def __unicode__(self):
         return unicode(self.image_name)
 
 
-class NetworkInterface(models.Model):
+class BaseNetworkInterface(models.Model):
     container = models.ForeignKey(Container, on_delete=models.CASCADE)
     endpoint_id = models.CharField(max_length=100, default="")
     network_name = models.CharField(max_length=300)
     network_id = models.CharField(max_length=300)
     mac_address = models.CharField(max_length=17)
     ip_address = models.CharField(max_length=40)
-    gateway_address = models.CharField(max_length=40, blank=True)
+    gateway_address = models.CharField(max_length=40, blank=True, null=True)
     subnet_prefix_length = models.IntegerField(default=0)
+
+    class Meta:
+        abstract = True
+
+
+class NetworkInterface(BaseNetworkInterface):
+
+    def __unicode__(self):
+        return unicode(self.network_name)
+
+
+class NetworkInterfaceNode(BaseNetworkInterface):
+    ip6_address = models.CharField(max_length=50)
 
     def __unicode__(self):
         return unicode(self.network_name)
