@@ -1,4 +1,4 @@
-from containerstorage.models import NetworkInterface
+from containerstorage.models import NetworkInterface, Service
 
 
 def get_service_ips_and_subnets(service):
@@ -13,3 +13,8 @@ def get_service_ips(service):
         lambda net: net.ip_address,
         list(NetworkInterface.objects.filter(container__service=service))
     )
+
+
+def get_service_for_ip(ip):
+    interface = NetworkInterface.objects.get(ip_address=ip)
+    return interface.container.service
