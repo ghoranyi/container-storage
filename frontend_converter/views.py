@@ -11,14 +11,13 @@ def view_es_query(request):
     return JsonResponse(_generate_es_query())
 
 
-def view_es_reponse(request):
-    url = settings.ELASTIC_URL
+def view_es_response(request):
     query = _generate_es_query()
-    es = Elasticsearch(url)
-    res = es.search(body=query)
+    res = _get_es_response(query)
     return JsonResponse(res)
 
-def view_visceral(request):
+
+def view_vizceral(request):
     return JsonResponse(_generate_visceral_input())
 
 
@@ -27,49 +26,17 @@ def _get_dummy_es_response():
     return simplejson.loads(dummy_response)
 
 
-def _generate_visceral_input():
-    input = {
-        "renderer": "global",
-        "name": "edge",
-        "nodes": [
-            {
-                "renderer": "region",
-                "name": "INTERNET",
-                "updated": int(time.time()),
-                "nodes": [],
-                "class": "normal"
-            },
-            {
-                "renderer": "region",
-                "name": "eu-west-1",
-                "class": "normal",
-                "updated": int(time.time()),
-                "nodes": [
-                    {
-                        "name": "INTERNET",
-                        "class": "normal"
-                    }
-                ],
-                "connections": []
-            }
-        ],
-        "connections": [
-            {
-                "source": "INTERNET",
-                "target": "eu-west-1",
-                "metrics": {
-                    "normal": 100,
-                },
-                "notices": [
+def _get_es_response(query):
+    url = settings.ELASTIC_URL
+    es = Elasticsearch(url)
+    return es.search(body=query)
 
-                ],
-                "class": "normal"
-            }
-        ]
-    }
+
+def _generate_visceral_input():
     service_nodes = set()
     connections = []
-    es_response = _get_dummy_es_response()
+    query = _generate_es_query()
+    es_response = _get_es_response(query)
     for service_name, service_details in es_response["aggregations"]["services"]["buckets"].iteritems():
         service_nodes.add(service_name)
         for client_ip_bucket in service_details["client_ips"]["buckets"]:
@@ -112,6 +79,7 @@ def _generate_visceral_input():
                 "name": "eu-west-1",
                 "class": "normal",
                 "updated": int(time.time()),
+                "maxVolume": 100,
                 "nodes": service_node_definitions,
                 "connections": connections
             }
@@ -121,16 +89,15 @@ def _generate_visceral_input():
                 "source": "INTERNET",
                 "target": "eu-west-1",
                 "metrics": {
-                    "normal": 100,
+                    "normal": 42,
                 },
-                "notices": [
-
-                ],
+                "notices": [ ],
                 "class": "normal"
             }
         ]
     }
     return input
+
 
 def _generate_es_query():
     query_object = {"size": 0, "query": {
