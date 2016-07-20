@@ -4,7 +4,7 @@
 rm -rf /etc/celery_*.pid
 rm -rf /var/log/celery_*.log
 
-source /virtualenv/bin/activate
+. /virtualenv/bin/activate
 
 cd /app
 ./manage.py celery -A containerstorageservice --detach --logfile=/var/log/celery_worker.log --pidfile=/etc/celery_worker.pid worker --concurrency=1 --loglevel=info
