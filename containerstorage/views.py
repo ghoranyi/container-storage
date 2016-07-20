@@ -3,7 +3,7 @@ from django.http import HttpResponse, HttpResponseServerError, Http404
 from django.shortcuts import render
 from logging import getLogger
 
-from containerstorage.models import Node, Container, NetworkInterface, Service
+from containerstorage.models import Node, Container, NetworkInterface, NetworkInterfaceNode, Service
 from containerstorage.utils import get_service_ips_and_subnets
 
 import simplejson
@@ -19,6 +19,12 @@ def register_node(request, node_id):
 
 
 def post_snapshot(request, node_id):
+    """
+    Snapshot json contains two sections: "containers" and "networks"
+
+    "containers" lists all basic containers information, e.g. `docker ps` for all nodes
+    "networks" lists all networks for all containers, including those that map external IPs
+    """
 
     log.debug("Request from {engine}".format(engine=node_id))
 
@@ -27,23 +33,42 @@ def post_snapshot(request, node_id):
     try:
         body = simplejson.loads(request.body)
         _remove_killed_containers(body, node_object)
+        # handle "containers" section
         for c in body["containers"]:
             container, created = Container.objects.get_or_create(container_id=c["Id"], host_node=node_object)
             _update_container(c, container)
             if created:
-                log.info("New container detected: {node}/{container}".format(node=node_object.node_uuid, container=container.image_name))
-            _remove_disconnected_networks(c, container)
+                log.info("New container detected: {node}/{container}".format(
+                    node=node_object.node_uuid, container=container.image_name))
+            _remove_disconnected_networks(c["NetworkSettings"]["Networks"], container, ni_model=NetworkInterface)
             for network_name, network_details in c["NetworkSettings"]["Networks"].iteritems():
-                network, created = NetworkInterface.objects.get_or_create(endpoint_id=network_details["EndpointID"], container=container)
+                network, created = NetworkInterface.objects.get_or_create(
+                    endpoint_id=network_details["EndpointID"], container=container)
                 _update_network(network, network_details, network_name)
                 if created:
                     log.info("New network interface detected: {node}/{container}/{network}".format(
                         node=node_object.node_uuid,
                         container=container.image_name,
                         network=network.network_name))
+        # handle "networks" section
+        for cid, data in body.get("networks", {}).iteritems():
+            container = Container.objects.filter(container_id=cid).first()
+
+            if not container:
+                log.warn("Agent posted json with non-existing container id %s in 'networks' section", cid)
+                continue
+
+            container.host_name = data["hostname"]
+            container.save()
+            _remove_disconnected_networks(data["networks"], container, ni_model=NetworkInterfaceNode)
+            for network_id, network_details in data["networks"]:
+                network, created = NetworkInterface.objects.get_or_create(
+                    endpoint_id=network_details["EndpointID"], network_id=network_id, container=container)
+                _update_network_node(network, network_details)
+
         return HttpResponse("OK")
 
-    except simplejson.JSONDecodeError as e:
+    except simplejson.JSONDecodeError:
         log.exception("Unable to parse message: {msg}".format(msg=request.body))
         return HttpResponseServerError("Unable to parse message body")
 
@@ -58,7 +83,17 @@ def _update_network(network, network_details, network_name):
     network.save()
 
 
-def _update_container(c, container):
+def _update_network_node(network, network_details):
+    network.network_name = network_details["Name"]
+    network.mac_address = network_details["MacAddress"]
+    network.ip6_address = network_details["IPv6Address"]
+    ipv4, subnet_len = network_details["IPv4Address"].split("/")
+    network.ip_address = ipv4
+    network.subnet_prefix_length = subnet_len
+    network.save()
+
+
+def _update_container(c, container, hostname=None):
     container.image_name = c["Image"]
     container.image_id = c["ImageID"]
     container.service_name = _get_service_name(c)
@@ -78,14 +113,16 @@ def _get_node(node_id):
 
 def _remove_killed_containers(body, node_object):
     container_ids = [c["Id"] for c in body["containers"]]
-    killed_containers_no, killed_containers = Container.objects.filter(host_node=node_object).exclude(container_id__in=container_ids).delete()
+    killed_containers_no, killed_containers = Container.objects.filter(
+        host_node=node_object).exclude(container_id__in=container_ids).delete()
     if killed_containers_no > 0:
         log.info("{no} containers were killed on {node}".format(no=killed_containers_no, node=node_object.node_uuid))
 
 
-def _remove_disconnected_networks(c, container):
-    network_ids = [n_details["EndpointID"] for n_name, n_details in c["NetworkSettings"]["Networks"].iteritems()]
-    detached_no, detached_list = NetworkInterface.objects.filter(container=container).exclude(endpoint_id__in=network_ids).delete()
+def _remove_disconnected_networks(networks, container, ni_model):
+    network_ids = [n_details["EndpointID"] for n_name, n_details in networks.iteritems()]
+    detached_no, detached_list = ni_model.objects.filter(
+        container=container).exclude(endpoint_id__in=network_ids).delete()
     if detached_no > 0:
         log.info("{no} interfaces were disconnected from {container}".format(no=detached_no, container=str(container)))
 
