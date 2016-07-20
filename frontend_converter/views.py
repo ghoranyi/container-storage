@@ -1,5 +1,5 @@
 from containerstorage.models import Service
-from containerstorage.utils import get_service_ips, get_service_for_ip
+from containerstorage.utils import get_service_ips, get_service_for_ip, get_internal_ips
 from django.conf import settings
 from django.http.response import JsonResponse
 from elasticsearch import Elasticsearch
@@ -41,7 +41,11 @@ def _generate_visceral_input():
         service_nodes.add(service_name)
         for client_ip_bucket in service_details["client_ips"]["buckets"]:
             client_ip = client_ip_bucket["key"]
-            client_service_name = get_service_for_ip(client_ip).name
+            client_service = get_service_for_ip(client_ip)
+            if client_service:
+                client_service_name = get_service_for_ip(client_ip).name
+            else:
+                client_service_name = "INTERNET"
             requests = client_ip_bucket["doc_count"]
             service_nodes.add(client_service_name)
             connections.append({
@@ -113,12 +117,22 @@ def _generate_es_query():
 
     filters = {}
     for service in Service.objects.all():
-        service_filter = {}
-        interfaces = get_service_ips(service)
-        service_filter["terms"] = {
-            "ip": interfaces
+        service_filter = []
+        interfaces = get_internal_ips(service)
+        for net in interfaces:
+            service_filter.append({
+                "bool": {
+                    "must": [
+                        {"term": {"ip": net[0]}},
+                        {"term": {"host": net[1]}}
+                    ]
+                }
+            })
+        filters[service.name] = {
+            "bool": {
+                "should": service_filter
+            }
         }
-        filters[service.name] = service_filter
 
     query_object["aggregations"] = {
         "services": {

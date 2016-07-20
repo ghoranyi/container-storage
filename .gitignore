@@ -38,3 +38,5 @@ nosetests.xml
 
 # OS
 .DS_Store
+
+celerybeat-schedule.db

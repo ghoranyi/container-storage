@@ -8,6 +8,9 @@
     {% for net in service.networks %}
       <li class="interface">{{ net.0 }}/{{ net.1 }}</li>
     {% endfor %}
+    {% for net in service.internal_interfaces %}
+      <li class="interface">{{ net.0 }}/{{ net.1 }}[{{ net.2 }}]</li>
+    {% endfor %}
     </ul>
   </li>
 {% endfor %}

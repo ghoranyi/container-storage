@@ -4,7 +4,7 @@ from django.shortcuts import render
 from logging import getLogger
 
 from containerstorage.models import Node, Container, NetworkInterface, NetworkInterfaceNode, Service
-from containerstorage.utils import get_service_ips_and_subnets
+from containerstorage.utils import get_service_ips_and_subnets, get_internal_ips_and_subnets
 
 import simplejson
 
@@ -150,6 +150,7 @@ def overview(request):
             containers.append({
                 "name": str(container),
                 "service": str(container.service),
+                "hostname": container.host_name,
                 "interfaces": interfaces
             })
         snapshot.append({
@@ -163,8 +164,10 @@ def service_interfaces(request):
     services = list()
     for service in Service.objects.all():
         interfaces = get_service_ips_and_subnets(service)
+        internal_interfaces = get_internal_ips_and_subnets(service)
         services.append({
             "name": str(service),
-            "networks": interfaces
+            "networks": interfaces,
+            "internal_interfaces": internal_interfaces
         })
     return render(request, 'containerstorage/service_interfaces.html', {"services": services})

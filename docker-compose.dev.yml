@@ -8,34 +8,27 @@ services:
       - 8878:8878
     volumes:
       - ./:/app/
-    networks:
-      - data_collection_network
-      - backend-redis-storage
+    environment:
+      - CELERY_BROKER_REDIS_URL=redis
+      - CELERY_RESULTS_REDIS_URL=redis
+      - ELASTICSEARCH_URL=https://search-proto-es-jcu7bqjlxa5ezcqphmii63yoky.eu-west-1.es.amazonaws.com
   worker:
     build: .
-    image: pipetop/container-worker
+    image: pipetop/container-storage
     volumes:
       - ./:/app/
-    networks:
-      - backend-redis-storage
     environment:
       - C_FORCE_ROOT=1
+      - CELERY_BROKER_REDIS_URL=redis
+      - CELERY_RESULTS_REDIS_URL=redis
+      - ELASTICSEARCH_URL=https://search-proto-es-jcu7bqjlxa5ezcqphmii63yoky.eu-west-1.es.amazonaws.com
     command: /app/start_celery_workers.sh
+
 
   redis:
       image: redis
-      networks:
-        - backend-redis-storage
 
-  agent:
-    image: pipetop/docker-agent
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    networks:
-      - data_collection_network
-
-networks:
-  data_collection_network:
-    driver: bridge
-  backend-redis-storage:
-    driver: bridge
+#  agent:
+#    image: pipetop/docker-agent
+#    volumes:
+#      - /var/run/docker.sock:/var/run/docker.sock
