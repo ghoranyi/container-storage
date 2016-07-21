@@ -37,6 +37,7 @@ def _generate_visceral_input():
     connections = []
     query = _generate_es_query()
     es_response = _get_es_response(query)
+    maxVolume = 0
     for service_name, service_details in es_response["aggregations"]["services"]["buckets"].iteritems():
         service_nodes.add(service_name)
         for client_ip_bucket in service_details["client_ips"]["buckets"]:
@@ -47,12 +48,26 @@ def _generate_visceral_input():
             else:
                 client_service_name = "INTERNET"
             requests = client_ip_bucket["doc_count"]
+            ok = 0
+            warn = 0
+            danger = 0
+            for status_details in client_ip_bucket["status"]["buckets"]:
+                if status_details["key"] == "200.0-299.0" or status_details["key"] == "300.0-399.0":
+                    ok += status_details["doc_count"]
+                elif status_details["key"] == "400.0-499.0":
+                    warn += status_details["doc_count"]
+                elif status_details["key"] == "500.0-599.0":
+                    danger += status_details["doc_count"]
+            if requests > maxVolume:
+                maxVolume = requests
             service_nodes.add(client_service_name)
             connections.append({
                 "source": client_service_name,
                 "target": service_name,
                 "metrics": {
-                    "normal": int(requests),
+                    "normal": int(ok),
+                    "danger": int(danger),
+                    "warning": int(warn),
                 },
                 "class": "normal"
             })
@@ -83,7 +98,7 @@ def _generate_visceral_input():
                 "name": "eu-west-1",
                 "class": "normal",
                 "updated": int(time.time()),
-                "maxVolume": 100,
+                "maxVolume": maxVolume,
                 "nodes": service_node_definitions,
                 "connections": connections
             }
