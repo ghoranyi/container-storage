@@ -38,6 +38,7 @@ def _generate_visceral_input():
     query = _generate_es_query()
     es_response = _get_es_response(query)
     maxVolume = 0
+    connection_map = dict() # (source, target) -> (ok, warn, danger)
     for service_name, service_details in es_response["aggregations"]["services"]["buckets"].iteritems():
         service_nodes.add(service_name)
         for client_ip_bucket in service_details["client_ips"]["buckets"]:
@@ -61,16 +62,25 @@ def _generate_visceral_input():
             if requests > maxVolume:
                 maxVolume = requests
             service_nodes.add(client_service_name)
-            connections.append({
-                "source": client_service_name,
-                "target": service_name,
-                "metrics": {
-                    "normal": int(ok),
-                    "danger": int(danger),
-                    "warning": int(warn),
-                },
-                "class": "normal"
-            })
+            key = (client_service_name, service_name)
+            if key in connection_map:
+                orig_ok, orig_warn, orig_danger = connection_map[key]
+                connection_map[key] = (orig_ok + int(ok), orig_warn + int(warn), orig_danger + int(danger))
+            else:
+                connection_map[key] = (int(ok), int(warn), int(danger))
+    for conn_key, conn_value in connection_map.iteritems():
+        source, target = conn_key
+        ok, warn, danger = conn_value
+        connections.append({
+            "source": source,
+            "target": target,
+            "metrics": {
+                "normal": ok,
+                "danger": danger,
+                "warning": warn,
+            },
+            "class": "normal"
+        })
     service_node_definitions = [
         {
             "name": x,
