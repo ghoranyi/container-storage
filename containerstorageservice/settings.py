@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'djcelery',
     'kombu.transport.django',
+    'corsheaders',
     'containerstorage',
     'frontend_converter'
 ]
@@ -47,6 +48,7 @@ INSTALLED_APPS = [
 MIDDLEWARE_CLASSES = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
@@ -142,3 +144,7 @@ CELERY_RESULT_BACKEND = 'redis://{redis}:6379/1'.format(redis=os.getenv('CELERY_
 # Elasticsearch connection settings
 
 ELASTIC_URL = os.getenv("ELASTICSEARCH_URL", "https://search-proto-es-jcu7bqjlxa5ezcqphmii63yoky.eu-west-1.es.amazonaws.com")
+
+# CORS
+
+CORS_ORIGIN_ALLOW_ALL = True
