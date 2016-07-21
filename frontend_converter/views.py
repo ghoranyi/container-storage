@@ -98,7 +98,7 @@ def _generate_visceral_input():
                 "name": "eu-west-1",
                 "class": "normal",
                 "updated": int(time.time()),
-                "maxVolume": maxVolume,
+                "maxVolume": maxVolume * 2 + 20,
                 "nodes": service_node_definitions,
                 "connections": connections
             }
