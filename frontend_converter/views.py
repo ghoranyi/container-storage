@@ -1,5 +1,5 @@
 from containerstorage.models import Service
-from containerstorage.utils import get_service_ips, get_service_for_ip, get_internal_ips
+from containerstorage.utils import get_service_for_ip, get_internal_ips
 from django.conf import settings
 from django.http.response import JsonResponse
 from elasticsearch import Elasticsearch
@@ -11,8 +11,19 @@ def view_es_query(request):
     return JsonResponse(_generate_es_query())
 
 
+def view_es_query_external(request):
+    return JsonResponse(_generate_es_query_external())
+
+
 def view_es_response(request):
-    query = _generate_es_query()
+    return _es_response(_generate_es_query_external())
+
+
+def view_es_response_external(request):
+    return _es_response(_generate_es_query())
+
+
+def _es_response(query):
     res = _get_es_response(query)
     return JsonResponse(res)
 
@@ -120,7 +131,7 @@ def _generate_visceral_input():
                 "metrics": {
                     "normal": 42,
                 },
-                "notices": [ ],
+                "notices": [],
                 "class": "normal"
             }
         ]
@@ -179,6 +190,112 @@ def _generate_es_query():
                                     {"from": 400, "to": 499},
                                     {"from": 500, "to": 599}
                                 ]
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return query_object
+
+
+def _generate_es_query_external():
+    """
+    Generate Elasticsearch query for external services, i.e. those that we don't track with packetbeat,
+    but are part of overall infrastructure. For example, get all the requests to ElasticCache (Redis).
+    """
+
+    query_object = {
+        "size": 0,
+        "query": {
+            "constant_score": {
+                "filter": {
+                    "and": [
+                        {"term": {"direction": "out"}},
+                        {"range": {"@timestamp": {"gt": "now-10m"}}},
+                        {
+                            "not": {
+                                "terms": {"ip": [get_internal_ips()]}
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    }
+
+    query_object["aggregations"] = {
+        "external_services": {
+            "terms": {
+                "field": "ip"
+            },
+            "aggregations": {
+                "redis": {
+                    "terms": {
+                        "field": "type",
+                        "include": "redis"
+                    },
+                    "aggregations": {
+                        "oks": {
+                            "missing": {"field": "redis.error"}
+                        },
+                        "errors": {
+                            "filter": {"exists": {"field": "redis.error"}}
+                        }
+                    }
+                },
+                "mysql": {
+                    "terms": {
+                        "field": "type",
+                        "include": "mysql"
+                    },
+                    "aggregations": {
+                        "oks": {
+                            "filter": {"term": {"mysql.iserror": "false"}}
+                        },
+                        "errors": {
+                            "filter": {"term": {"mysql.iserror": "true"}}
+                        }
+                    }
+                },
+                "pgsql": {
+                    "terms": {
+                        "field": "type",
+                        "include": "pgsql"
+                    },
+                    "aggregations": {
+                        "oks": {
+                            "filter": {"term": {"pgsql.iserror": "false"}}
+                        },
+                        "errors": {
+                            "filter": {"term": {"pgsql.iserror": "true"}}
+                        }
+                    }
+                },
+                "http": {
+                    "terms": {
+                        "field": "type",
+                        "include": "http"
+                    },
+                    "aggregations": {
+                        "status": {
+                            "range": {
+                                "ranges": [{
+                                    "to": 299,
+                                    "from": 200
+                                }, {
+                                    "to": 399,
+                                    "from": 300
+                                }, {
+                                    "to": 499,
+                                    "from": 400
+                                }, {
+                                    "to": 599,
+                                    "from": 500
+                                }],
+                                "field": "http.code"
                             }
                         }
                     }
