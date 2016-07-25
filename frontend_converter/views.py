@@ -5,6 +5,7 @@ from django.http.response import JsonResponse
 from elasticsearch import Elasticsearch
 import simplejson
 import time
+from collections import defaultdict
 
 
 def view_es_query(request):
@@ -49,14 +50,20 @@ def _generate_visceral_input():
     query = _generate_es_query()
     es_response = _get_es_response(query)
     maxVolume = 0
-    connection_map = dict() # (source, target) -> (ok, warn, danger)
+    connection_map = defaultdict(lambda: (0, 0, 0)) # (source, target) -> (ok, warn, danger)
+
+    def _update_map(key, ok, warn, danger):
+        orig_ok, orig_warn, orig_danger = connection_map[key]
+        connection_map[key] = (orig_ok + int(ok), orig_warn + int(warn), orig_danger + int(danger))
+
+    # Handle internal services
     for service_name, service_details in es_response["aggregations"]["services"]["buckets"].iteritems():
         service_nodes.add(service_name)
         for client_ip_bucket in service_details["client_ips"]["buckets"]:
             client_ip = client_ip_bucket["key"]
             client_service = get_service_for_ip(client_ip)
             if client_service:
-                client_service_name = get_service_for_ip(client_ip).name
+                client_service_name = client_service.name
             else:
                 client_service_name = "INTERNET"
             requests = client_ip_bucket["doc_count"]
@@ -74,11 +81,37 @@ def _generate_visceral_input():
                 maxVolume = requests
             service_nodes.add(client_service_name)
             key = (client_service_name, service_name)
-            if key in connection_map:
-                orig_ok, orig_warn, orig_danger = connection_map[key]
-                connection_map[key] = (orig_ok + int(ok), orig_warn + int(warn), orig_danger + int(danger))
-            else:
-                connection_map[key] = (int(ok), int(warn), int(danger))
+            _update_map(key, ok, warn, danger)
+
+    # Handle external services, for example Redis in AWS ElastiCache:
+    #   1. Fetch the data from Elastic Search with a separate query that filters on "out" requests
+    #   2. Result of the ES query is a nested aggregation counts:
+    #
+    #          "external_services" -> "clients" -> "redis, mysql, pgsql"
+    #
+    #      Basically, it's a list of external services (i.e. their IPs) that maps to client IPs and contains
+    #      counts for redis, mysql and pgsql for every client IP.
+    #   3. Add this data to 'service_nodes' and 'connection_map'
+    es_response_external = _get_es_response(_generate_es_query_external())
+    for external in es_response_external.get("aggregations", {}).get("external_services", {}).get("buckets", []):
+        service_ip = external.get("key")
+        doc_count = external.get("doc_count")
+        if doc_count > 0:
+            for client in external.get("clients", {}).get("buckets", []):
+                client_ip = client.get("key")
+                client_service = get_service_for_ip(client_ip)
+                if not client_service:
+                    continue
+                for bucket in [client.get(b, {}) for b in ["redis", "mysql", "pgsql"]]:
+                    bucket_counts = bucket.get("buckets", [])
+                    if len(bucket_counts) < 1:
+                        continue
+                    service_name = "{}_external_{}".format(bucket_counts[0]["key"], service_ip)
+                    service_nodes.add(service_name)
+                    oks, errors = [bucket_counts[0].get(x, 0) for x in ["oks", "errors"]]
+                    key = (client_service.name, service_name)
+                    _update_map(key, oks.get("doc_count", 0), 0, errors.get("doc_count", 0))
+
     for conn_key, conn_value in connection_map.iteritems():
         source, target = conn_key
         ok, warn, danger = conn_value
@@ -234,70 +267,51 @@ def _generate_es_query_external():
                 "field": "ip"
             },
             "aggregations": {
-                "redis": {
+                "clients": {
                     "terms": {
-                        "field": "type",
-                        "include": "redis"
+                        "field": "client_ip"
                     },
                     "aggregations": {
-                        "oks": {
-                            "missing": {"field": "redis.error"}
+                        "redis": {
+                            "terms": {
+                                "field": "type",
+                                "include": "redis"
+                            },
+                            "aggregations": {
+                                "oks": {
+                                    "missing": {"field": "redis.error"}
+                                },
+                                "errors": {
+                                    "filter": {"exists": {"field": "redis.error"}}
+                                }
+                            }
                         },
-                        "errors": {
-                            "filter": {"exists": {"field": "redis.error"}}
-                        }
-                    }
-                },
-                "mysql": {
-                    "terms": {
-                        "field": "type",
-                        "include": "mysql"
-                    },
-                    "aggregations": {
-                        "oks": {
-                            "filter": {"term": {"mysql.iserror": "false"}}
+                        "mysql": {
+                            "terms": {
+                                "field": "type",
+                                "include": "mysql"
+                            },
+                            "aggregations": {
+                                "oks": {
+                                    "filter": {"term": {"mysql.iserror": "false"}}
+                                },
+                                "errors": {
+                                    "filter": {"term": {"mysql.iserror": "true"}}
+                                }
+                            }
                         },
-                        "errors": {
-                            "filter": {"term": {"mysql.iserror": "true"}}
-                        }
-                    }
-                },
-                "pgsql": {
-                    "terms": {
-                        "field": "type",
-                        "include": "pgsql"
-                    },
-                    "aggregations": {
-                        "oks": {
-                            "filter": {"term": {"pgsql.iserror": "false"}}
-                        },
-                        "errors": {
-                            "filter": {"term": {"pgsql.iserror": "true"}}
-                        }
-                    }
-                },
-                "http": {
-                    "terms": {
-                        "field": "type",
-                        "include": "http"
-                    },
-                    "aggregations": {
-                        "status": {
-                            "range": {
-                                "ranges": [{
-                                    "to": 299,
-                                    "from": 200
-                                }, {
-                                    "to": 399,
-                                    "from": 300
-                                }, {
-                                    "to": 499,
-                                    "from": 400
-                                }, {
-                                    "to": 599,
-                                    "from": 500
-                                }],
-                                "field": "http.code"
+                        "pgsql": {
+                            "terms": {
+                                "field": "type",
+                                "include": "pgsql"
+                            },
+                            "aggregations": {
+                                "oks": {
+                                    "filter": {"term": {"pgsql.iserror": "false"}}
+                                },
+                                "errors": {
+                                    "filter": {"term": {"pgsql.iserror": "true"}}
+                                }
                             }
                         }
                     }
