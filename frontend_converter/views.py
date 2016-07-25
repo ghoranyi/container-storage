@@ -16,11 +16,11 @@ def view_es_query_external(request):
 
 
 def view_es_response(request):
-    return _es_response(_generate_es_query_external())
+    return _es_response(_generate_es_query())
 
 
 def view_es_response_external(request):
-    return _es_response(_generate_es_query())
+    return _es_response(_generate_es_query_external())
 
 
 def _es_response(query):
