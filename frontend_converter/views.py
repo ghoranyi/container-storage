@@ -207,6 +207,8 @@ def _generate_es_query_external():
     but are part of overall infrastructure. For example, get all the requests to ElasticCache (Redis).
     """
 
+    internal_ips = [net[0] for service in Service.objects.all() for net in get_internal_ips(service)]
+
     query_object = {
         "size": 0,
         "query": {
@@ -217,7 +219,7 @@ def _generate_es_query_external():
                         {"range": {"@timestamp": {"gt": "now-10m"}}},
                         {
                             "not": {
-                                "terms": {"ip": [get_internal_ips()]}
+                                "terms": {"ip": internal_ips}
                             }
                         }
                     ]
