@@ -97,7 +97,7 @@ def _generate_visceral_input():
         service_ip = external.get("key")
         doc_count = external.get("doc_count")
         if doc_count > 0:
-            for client_host in external.get("client_hosts", {}).get("buckets", []):
+            for client_host in external.get("clients", {}).get("buckets", []):
                 host = client_host.get("key")
                 client_service_name = get_service_name(host)
                 if not client_service_name:

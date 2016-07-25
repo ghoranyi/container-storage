@@ -38,5 +38,5 @@ def get_service_for_ip(ip):
 
 
 def get_service_name(host):
-    container = Container.objects.filter(hostname=host).first()
+    container = Container.objects.filter(host_name=host).first()
     return container.service_name if container else None
