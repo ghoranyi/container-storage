@@ -1,4 +1,4 @@
-from containerstorage.models import NetworkInterface, NetworkInterfaceNode
+from containerstorage.models import NetworkInterface, NetworkInterfaceNode, Container
 
 
 def get_service_ips_and_subnets(service):
@@ -35,3 +35,8 @@ def get_service_for_ip(ip):
         return interface.container.service
     except NetworkInterfaceNode.DoesNotExist:
         return None
+
+
+def get_service_name(host):
+    container = Container.objects.filter(hostname=host).first()
+    return container.service_name if container else None

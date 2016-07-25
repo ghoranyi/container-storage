@@ -1,5 +1,5 @@
 from containerstorage.models import Service
-from containerstorage.utils import get_service_for_ip, get_internal_ips
+from containerstorage.utils import get_service_for_ip, get_internal_ips, get_service_name
 from django.conf import settings
 from django.http.response import JsonResponse
 from elasticsearch import Elasticsearch
@@ -87,7 +87,7 @@ def _generate_visceral_input():
     #   1. Fetch the data from Elastic Search with a separate query that filters on "out" requests
     #   2. Result of the ES query is a nested aggregation counts:
     #
-    #          "external_services" -> "clients" -> "redis, mysql, pgsql"
+    #          "external_services" -> "clients (aggregated by host name)" -> "redis, mysql, pgsql"
     #
     #      Basically, it's a list of external services (i.e. their IPs) that maps to client IPs and contains
     #      counts for redis, mysql and pgsql for every client IP.
@@ -97,19 +97,20 @@ def _generate_visceral_input():
         service_ip = external.get("key")
         doc_count = external.get("doc_count")
         if doc_count > 0:
-            for client in external.get("clients", {}).get("buckets", []):
-                client_ip = client.get("key")
-                client_service = get_service_for_ip(client_ip)
-                if not client_service:
+            for client_host in external.get("client_hosts", {}).get("buckets", []):
+                host = client_host.get("key")
+                client_service_name = get_service_name(host)
+                if not client_service_name:
                     continue
-                for bucket in [client.get(b, {}) for b in ["redis", "mysql", "pgsql"]]:
+                service_nodes.add(client_service_name)
+                for bucket in [client_host.get(b, {}) for b in ["redis", "mysql", "pgsql"]]:
                     bucket_counts = bucket.get("buckets", [])
                     if len(bucket_counts) < 1:
                         continue
                     service_name = "{}_external_{}".format(bucket_counts[0]["key"], service_ip)
                     service_nodes.add(service_name)
                     oks, errors = [bucket_counts[0].get(x, 0) for x in ["oks", "errors"]]
-                    key = (client_service.name, service_name)
+                    key = (client_service_name, service_name)
                     _update_map(key, oks.get("doc_count", 0), 0, errors.get("doc_count", 0))
 
     for conn_key, conn_value in connection_map.iteritems():
@@ -269,7 +270,7 @@ def _generate_es_query_external():
             "aggregations": {
                 "clients": {
                     "terms": {
-                        "field": "client_ip"
+                        "field": "host"
                     },
                     "aggregations": {
                         "redis": {
