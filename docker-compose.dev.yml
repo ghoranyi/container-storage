@@ -11,7 +11,7 @@ services:
     environment:
       - CELERY_BROKER_REDIS_URL=redis
       - CELERY_RESULTS_REDIS_URL=redis
-      - ELASTICSEARCH_URL=https://search-proto-es-jcu7bqjlxa5ezcqphmii63yoky.eu-west-1.es.amazonaws.com
+      - ELASTICSEARCH_URL=https://search-proto-es-23-hh7x4mw6gx5dgsh27zez5qbrk4.eu-west-1.es.amazonaws.com
   worker:
     build: .
     image: pipetop/container-storage
@@ -21,7 +21,7 @@ services:
       - C_FORCE_ROOT=1
       - CELERY_BROKER_REDIS_URL=redis
       - CELERY_RESULTS_REDIS_URL=redis
-      - ELASTICSEARCH_URL=https://search-proto-es-jcu7bqjlxa5ezcqphmii63yoky.eu-west-1.es.amazonaws.com
+      - ELASTICSEARCH_URL=https://search-proto-es-23-hh7x4mw6gx5dgsh27zez5qbrk4.eu-west-1.es.amazonaws.com
     command: /app/start_celery_workers.sh
 
 

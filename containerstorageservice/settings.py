@@ -143,7 +143,7 @@ CELERY_RESULT_BACKEND = 'redis://{redis}:6379/1'.format(redis=os.getenv('CELERY_
 
 # Elasticsearch connection settings
 
-ELASTIC_URL = os.getenv("ELASTICSEARCH_URL", "https://search-proto-es-jcu7bqjlxa5ezcqphmii63yoky.eu-west-1.es.amazonaws.com")
+ELASTIC_URL = os.getenv("ELASTICSEARCH_URL", "https://search-proto-es-23-hh7x4mw6gx5dgsh27zez5qbrk4.eu-west-1.es.amazonaws.com")
 
 # CORS
 
