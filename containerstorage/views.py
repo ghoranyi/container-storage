@@ -128,12 +128,13 @@ def _remove_disconnected_networks(networks, container, ni_model):
 
 
 def _get_service_name(container_details):
-    # docker-compose service
     labels = container_details["Labels"]
-    COMPOSE_SERVICE_LABEL_KEY = "com.docker.compose.service"
-    if COMPOSE_SERVICE_LABEL_KEY in labels:
-        return labels[COMPOSE_SERVICE_LABEL_KEY]
-    return None
+    # docker-compose service
+    label = labels.get("com.docker.compose.service")
+    if not label:
+        # swarm service
+        label = labels.get("com.docker.swarm.service.name")
+    return label
 
 
 def overview(request):
