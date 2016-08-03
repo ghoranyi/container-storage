@@ -1,4 +1,4 @@
-FROM python:2.7.12-wheezy
+FROM python:2.7.12
 
 # RUN apk update && apk add py-virtualenv mariadb-dev
 RUN apt-get update && apt-get install -y --force-yes python-virtualenv libmysqlclient-dev
