@@ -80,13 +80,14 @@ WSGI_APPLICATION = 'containerstorageservice.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.9/ref/settings/#databases
 
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': "containerstorage",
         'USER': "root",
         'PASSWORD': "containerstoragepassword",
-        'HOST': 'proto-backend-storage.cgnfgjir0owe.eu-west-1.rds.amazonaws.com',
+        'HOST': os.getenv("MYSQL_HOST", "localhost"),
         'PORT': '3306',
     }
 }

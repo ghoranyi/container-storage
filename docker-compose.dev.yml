@@ -12,6 +12,7 @@ services:
       - CELERY_BROKER_REDIS_URL=redis
       - CELERY_RESULTS_REDIS_URL=redis
       - ELASTICSEARCH_URL=https://search-proto-es-23-hh7x4mw6gx5dgsh27zez5qbrk4.eu-west-1.es.amazonaws.com
+      - MYSQL_HOST=proto-backend-storage.cgnfgjir0owe.eu-west-1.rds.amazonaws.com
   worker:
     build: .
     image: pipetop/container-storage
@@ -22,6 +23,7 @@ services:
       - CELERY_BROKER_REDIS_URL=redis
       - CELERY_RESULTS_REDIS_URL=redis
       - ELASTICSEARCH_URL=https://search-proto-es-23-hh7x4mw6gx5dgsh27zez5qbrk4.eu-west-1.es.amazonaws.com
+      - MYSQL_HOST=proto-backend-storage.cgnfgjir0owe.eu-west-1.rds.amazonaws.com
     command: /app/start_celery_workers.sh
 
 
