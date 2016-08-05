@@ -194,7 +194,7 @@ def _generate_es_query():
                 "bool": {
                     "must": [
                         {"term": {"ip": net[0]}},
-                        {"term": {"host": net[1]}}
+                        {"term": {"beat.hostname": net[1]}}
                     ]
                 }
             })
