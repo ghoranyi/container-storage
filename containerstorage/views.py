@@ -51,7 +51,7 @@ def post_snapshot(request, node_id):
                     node=node_object.node_uuid, container=container.image_name))
             _remove_disconnected_networks(c["NetworkSettings"]["Networks"], container, ni_model=NetworkInterface)
             for network_name, network_details in c["NetworkSettings"]["Networks"].iteritems():
-                network, created = NetworkInterface.objects.get_or_create(
+                network, created = NetworkInterfaceNode.objects.get_or_create(
                     endpoint_id=network_details["EndpointID"], container=container)
                 _update_network(network, network_details, network_name)
                 if created:
