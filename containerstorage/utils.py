@@ -30,10 +30,10 @@ def get_internal_ips(service):
 
 
 def get_service_for_ip(ip):
-    try:
-        interface = NetworkInterfaceNode.objects.get(ip_address=ip)
+    interface = NetworkInterfaceNode.objects.filter(ip_address=ip).first()
+    if interface:
         return interface.container.service
-    except NetworkInterfaceNode.DoesNotExist:
+    else:
         return None
 
 

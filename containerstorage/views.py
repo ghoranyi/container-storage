@@ -13,6 +13,7 @@ log = getLogger("containerstorage")
 
 
 def register_node(request, node_id):
+
     node = Node.objects.create(node_uuid=node_id)
     log.info("New node registered ({engine})".format(engine=node.node_uuid))
     return HttpResponse(node.node_uuid)
@@ -49,7 +50,7 @@ def post_snapshot(request, node_id):
             if created:
                 log.info("New container detected: {node}/{container}".format(
                     node=node_object.node_uuid, container=container.image_name))
-            _remove_disconnected_networks(c["NetworkSettings"]["Networks"], container, ni_model=NetworkInterface)
+            # _remove_disconnected_networks(c["NetworkSettings"]["Networks"], container, ni_model=NetworkInterfaceNode)
             for network_name, network_details in c["NetworkSettings"]["Networks"].iteritems():
                 network, created = NetworkInterfaceNode.objects.get_or_create(
                     endpoint_id=network_details["EndpointID"], container=container)
@@ -69,7 +70,8 @@ def post_snapshot(request, node_id):
 
             container.host_name = data["hostname"]
             container.save()
-            _remove_disconnected_networks(data["networks"], container, ni_model=NetworkInterfaceNode)
+
+            # _remove_disconnected_networks(data["networks"], container, ni_model=NetworkInterfaceNode)
             for network_id, network_details in data["networks"].iteritems():
                 network, created = NetworkInterfaceNode.objects.get_or_create(
                     endpoint_id=network_details["EndpointID"], network_id=network_id, container=container)
@@ -136,7 +138,7 @@ def _remove_disconnected_networks(networks, container, ni_model):
     detached_no, detached_list = ni_model.objects.filter(
         container=container).exclude(endpoint_id__in=network_ids).delete()
     if detached_no > 0:
-        log.info("{no} interfaces were disconnected from {container}".format(no=detached_no, container=str(container)))
+        log.info("{no} {ni_model} were disconnected from {container}".format(no=detached_no, ni_model=str(ni_model.__name__), container=str(container)))
 
 
 def _get_service_name(container_details):

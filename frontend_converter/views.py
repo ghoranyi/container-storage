@@ -66,17 +66,23 @@ def _generate_visceral_input():
                 client_service_name = client_service.name
             else:
                 client_service_name = "INTERNET"
+
             requests = client_ip_bucket["doc_count"]
             ok = 0
             warn = 0
             danger = 0
             for status_details in client_ip_bucket["status"]["buckets"]:
+                # if service_name == "result":
+                    # print "{client}->{target}".format(client=client_service_name, target=service_name)
+                    # import pdb; pdb.set_trace()
                 if status_details["key"] == "200.0-299.0" or status_details["key"] == "300.0-399.0":
                     ok += status_details["doc_count"]
                 elif status_details["key"] == "400.0-499.0":
                     warn += status_details["doc_count"]
                 elif status_details["key"] == "500.0-599.0":
                     danger += status_details["doc_count"]
+            rest = requests - (ok + warn + danger) ## this is the numver of SQL/Redis requests
+            ok = ok + rest ## TODO fix this
             if requests > maxVolume:
                 maxVolume = requests
             service_nodes.add(client_service_name)
@@ -92,26 +98,26 @@ def _generate_visceral_input():
     #      Basically, it's a list of external services (i.e. their IPs) that maps to client IPs and contains
     #      counts for redis, mysql and pgsql for every client IP.
     #   3. Add this data to 'service_nodes' and 'connection_map'
-    es_response_external = _get_es_response(_generate_es_query_external())
-    for external in es_response_external.get("aggregations", {}).get("external_services", {}).get("buckets", []):
-        service_ip = external.get("key")
-        doc_count = external.get("doc_count")
-        if doc_count > 0:
-            for client_host in external.get("clients", {}).get("buckets", []):
-                host = client_host.get("key")
-                client_service_name = get_service_name(host)
-                if not client_service_name:
-                    continue
-                service_nodes.add(client_service_name)
-                for bucket in [client_host.get(b, {}) for b in ["redis", "mysql", "pgsql"]]:
-                    bucket_counts = bucket.get("buckets", [])
-                    if len(bucket_counts) < 1:
-                        continue
-                    service_name = "{}_external_{}".format(bucket_counts[0]["key"], service_ip)
-                    service_nodes.add(service_name)
-                    oks, errors = [bucket_counts[0].get(x, 0) for x in ["oks", "errors"]]
-                    key = (client_service_name, service_name)
-                    _update_map(key, oks.get("doc_count", 0), 0, errors.get("doc_count", 0))
+    # es_response_external = _get_es_response(_generate_es_query_external())
+    # for external in es_response_external.get("aggregations", {}).get("external_services", {}).get("buckets", []):
+    #     service_ip = external.get("key")
+    #     doc_count = external.get("doc_count")
+    #     if doc_count > 0:
+    #         for client_host in external.get("clients", {}).get("buckets", []):
+    #             host = client_host.get("key")
+    #             client_service_name = get_service_name(host)
+    #             if not client_service_name:
+    #                 continue
+    #             service_nodes.add(client_service_name)
+    #             for bucket in [client_host.get(b, {}) for b in ["redis", "mysql", "pgsql"]]:
+    #                 bucket_counts = bucket.get("buckets", [])
+    #                 if len(bucket_counts) < 1:
+    #                     continue
+    #                 service_name = "{}_external_{}".format(bucket_counts[0]["key"], service_ip)
+    #                 service_nodes.add(service_name)
+    #                 oks, errors = [bucket_counts[0].get(x, 0) for x in ["oks", "errors"]]
+    #                 key = (client_service_name, service_name)
+    #                 _update_map(key, oks.get("doc_count", 0), 0, errors.get("doc_count", 0))
 
     for conn_key, conn_value in connection_map.iteritems():
         source, target = conn_key
@@ -190,14 +196,15 @@ def _generate_es_query():
         service_filter = []
         interfaces = get_internal_ips(service)
         for net in interfaces:
-            service_filter.append({
-                "bool": {
-                    "must": [
-                        {"term": {"ip": net[0]}},
-                        {"term": {"beat.hostname": net[1]}}
-                    ]
-                }
-            })
+            if net[1]:
+                service_filter.append({
+                    "bool": {
+                        "must": [
+                            {"term": {"ip": net[0]}},
+                            {"term": {"beat.hostname": net[1]}}
+                        ]
+                    }
+                })
         filters[service.name] = {
             "bool": {
                 "should": service_filter
