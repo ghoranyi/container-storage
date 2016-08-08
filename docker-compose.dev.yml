@@ -3,7 +3,7 @@ version: '2'
 services:
   backend:
     build: .
-    image: pipetop/container-storage
+    image: ghoranyi/container-storage
     ports:
       - 8878:8878
     volumes:
@@ -15,7 +15,7 @@ services:
       - MYSQL_HOST=proto-backend-storage.cgnfgjir0owe.eu-west-1.rds.amazonaws.com
   worker:
     build: .
-    image: pipetop/container-storage
+    image: ghoranyi/container-storage
     volumes:
       - ./:/app/
     environment:
@@ -31,6 +31,6 @@ services:
       image: redis
 
 #  agent:
-#    image: pipetop/docker-agent
+#    image: ghoranyi/docker-agent
 #    volumes:
 #      - /var/run/docker.sock:/var/run/docker.sock
