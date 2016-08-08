@@ -2,7 +2,7 @@ version: '2'
 
 services:
   backend:
-    image: pipetop/container-storage
+    image: ghoranyi/container-storage
     ports:
       - 8878:8878
     environment:
@@ -11,7 +11,7 @@ services:
       - ELASTICSEARCH_URL=https://search-proto-es-23-hh7x4mw6gx5dgsh27zez5qbrk4.eu-west-1.es.amazonaws.com
       - MYSQL_HOST=proto-backend-storage.cgnfgjir0owe.eu-west-1.rds.amazonaws.com
   worker:
-    image: pipetop/container-storage
+    image: ghoranyi/container-storage
     environment:
       - C_FORCE_ROOT=1
       - CELERY_BROKER_REDIS_URL=backend-worker-redis.h4s6xj.0001.euw1.cache.amazonaws.com
