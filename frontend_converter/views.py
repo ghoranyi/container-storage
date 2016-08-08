@@ -270,7 +270,7 @@ def _generate_es_query_external():
             "aggregations": {
                 "clients": {
                     "terms": {
-                        "field": "host"
+                        "field": "beat.hostname"
                     },
                     "aggregations": {
                         "redis": {
