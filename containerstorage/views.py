@@ -35,7 +35,16 @@ def post_snapshot(request, node_id):
         _remove_killed_containers(body, node_object)
         # handle "containers" section
         for c in body["containers"]:
-            container, created = Container.objects.get_or_create(container_id=c["Id"], host_node=node_object)
+            try:
+                container, created = Container.objects.get_or_create(container_id=c["Id"], host_node=node_object)
+            except Exception as e:
+                log.exception(e)
+                log.error("Unable to get container with ID: {id} on host {host}. Error: {error}".format(
+                    id=c["Id"],
+                    host_node=str(node_object),
+                    error=str(e)
+                ))
+                return HttpResponseServerError("Unable to get container. Error: {e}".format(e=str(e)))
             _update_container(c, container)
             if created:
                 log.info("New container detected: {node}/{container}".format(
@@ -71,6 +80,9 @@ def post_snapshot(request, node_id):
     except simplejson.JSONDecodeError:
         log.exception("Unable to parse message: {msg}".format(msg=request.body))
         return HttpResponseServerError("Unable to parse message body")
+    except Exception as e:
+        log.exception(e)
+        return HttpResponseServerError("Unknown error during saving update. Please check server logs.")
 
 
 def _update_network(network, network_details, network_name):
