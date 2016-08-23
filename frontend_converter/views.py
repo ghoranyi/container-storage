@@ -50,7 +50,7 @@ def _generate_visceral_input():
     query = _generate_es_query()
     es_response = _get_es_response(query)
     maxVolume = 0
-    connection_map = defaultdict(lambda: (0, 0, 0)) # (source, target) -> (ok, warn, danger)
+    connection_map = defaultdict(lambda: (0, 0, 0))  # (source, target) -> (ok, warn, danger)
 
     def _update_map(key, ok, warn, danger):
         orig_ok, orig_warn, orig_danger = connection_map[key]
@@ -71,18 +71,39 @@ def _generate_visceral_input():
             ok = 0
             warn = 0
             danger = 0
-            for status_details in client_ip_bucket["status"]["buckets"]:
-                # if service_name == "result":
-                    # print "{client}->{target}".format(client=client_service_name, target=service_name)
-                    # import pdb; pdb.set_trace()
-                if status_details["key"] == "200.0-299.0" or status_details["key"] == "300.0-399.0":
+            # HTTP requests
+            http_bucket = client_ip_bucket["http_requests"]
+            for status_details in http_bucket["status_codes"]["buckets"]:
+                if status_details["key"] == "200.0-299.0" or status_details["key"] == "300.0-399.0" or status_details["key"] == "200.0-399.0":
                     ok += status_details["doc_count"]
                 elif status_details["key"] == "400.0-499.0":
                     warn += status_details["doc_count"]
                 elif status_details["key"] == "500.0-599.0":
                     danger += status_details["doc_count"]
-            rest = requests - (ok + warn + danger) ## this is the numver of SQL/Redis requests
-            ok = ok + rest ## TODO fix this
+            # REDIS requests
+            redis_requests = client_ip_bucket["redis_requests"]
+            redis_all = redis_requests["doc_count"]
+            redis_successful = redis_requests["successful"]["doc_count"]
+            redis_error = redis_all - redis_successful
+            ok += redis_successful
+            error += redis_error
+            # POSTGRESQL requests
+            psql_requests = client_ip_bucket["psql_requests"]
+            psql_all = psql_requests["doc_count"]
+            psql_successful = psql_requests["successful"]["doc_count"]
+            psql_error = psql_all - psql_successful
+            ok += psql_successful
+            error += psql_error
+            # MYSQL requests
+            mysql_requests = client_ip_bucket["mysql_requests"]
+            mysql_all = mysql_requests["doc_count"]
+            mysql_successful = mysql_requests["successful"]["doc_count"]
+            mysql_error = mysql_all - mysql_successful
+            ok += mysql_successful
+            error += mysql_error
+            # Everything else (requests which are captured by packetbeat, but not http/redis/sql)
+            rest = requests - (ok + warn + danger)  # this is the number of SQL/Redis requests
+            ok = ok + rest
             if requests > maxVolume:
                 maxVolume = requests
             service_nodes.add(client_service_name)
@@ -222,15 +243,69 @@ def _generate_es_query():
                         "field": "client_ip"
                     },
                     "aggregations": {
-                        "status": {
-                            "range": {
-                                "field": "http.code",
-                                "ranges": [
-                                    {"from": 200, "to": 299},
-                                    {"from": 300, "to": 399},
-                                    {"from": 400, "to": 499},
-                                    {"from": 500, "to": 599}
-                                ]
+                        "http_requests": {
+                            "filter": {
+                                "term": {
+                                    "type": "http"
+                                }
+                            },
+                            "aggregations": {
+                                "status_codes": {
+                                    "range": {
+                                        "field": "http.code",
+                                        "ranges": [
+                                            {"from": 200, "to": 399},
+                                            {"from": 400, "to": 499},
+                                            {"from": 500, "to": 599}
+                                        ]
+                                    }
+                                }
+                            }
+                        },
+                        "redis_requests": {
+                            "filter": {
+                                "term": {
+                                    "type": "redis"
+                                }
+                            },
+                            "aggregations": {
+                                "successful": {
+                                    "missing": {
+                                        "field": "redis.error"
+                                    }
+                                }
+                            }
+                        },
+                        "psql_requests": {
+                            "filter": {
+                                "term": {
+                                    "type": "pgsql"
+                                }
+                            },
+                            "aggregations": {
+                                "successful": {
+                                    "filter": {
+                                        "term": {
+                                            "pgsql.iserror": "false"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "mysql_requests": {
+                            "filter": {
+                                "term": {
+                                    "type": "mysql"
+                                }
+                            },
+                            "aggregations": {
+                                "successful": {
+                                    "filter": {
+                                        "term": {
+                                            "mysql.iserror": "false"
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
