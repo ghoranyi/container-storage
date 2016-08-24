@@ -86,21 +86,21 @@ def _generate_visceral_input():
             redis_successful = redis_requests["successful"]["doc_count"]
             redis_error = redis_all - redis_successful
             ok += redis_successful
-            error += redis_error
+            danger += redis_error
             # POSTGRESQL requests
             psql_requests = client_ip_bucket["psql_requests"]
             psql_all = psql_requests["doc_count"]
             psql_successful = psql_requests["successful"]["doc_count"]
             psql_error = psql_all - psql_successful
             ok += psql_successful
-            error += psql_error
+            danger += psql_error
             # MYSQL requests
             mysql_requests = client_ip_bucket["mysql_requests"]
             mysql_all = mysql_requests["doc_count"]
             mysql_successful = mysql_requests["successful"]["doc_count"]
             mysql_error = mysql_all - mysql_successful
             ok += mysql_successful
-            error += mysql_error
+            danger += mysql_error
             # Everything else (requests which are captured by packetbeat, but not http/redis/sql)
             rest = requests - (ok + warn + danger)  # this is the number of SQL/Redis requests
             ok = ok + rest
